@@ -1,5 +1,5 @@
 # Deep-Reinforcement-Learning
-A repository for my University Studies for the module of Reinforcement Learning
+A repository for  University Studies for the module of Reinforcement Learning
 
 
 Repository will include
