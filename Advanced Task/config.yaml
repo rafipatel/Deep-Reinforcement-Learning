@@ -1,4 +1,10 @@
-model:
-  hidden: 128
-env:
-  name: 
+# Training parameters
+train:
+  batch_size: 64
+  episodes: 1000
+agent:
+  lr: 0.001
+  gamma: 0.95
+  epsilon: 1.0
+  epsilon_min: 0.01
+  epsilon_decay: 0.995
