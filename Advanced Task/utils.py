@@ -1,7 +1,12 @@
+# from IPython import display
+from IPython import display
 import matplotlib.pyplot as plt
 import torch
 import yaml
 import argparse
+from agent import DQNAgent
+from gymnasium import Env
+from agent import DQNAgent
 
 
 def parse_arguments():
@@ -18,9 +23,9 @@ def read_settings(config_path):
     return settings
 
 
-def plot_durations(episode_durations, show_result=False):
+def plot_rewards(episode_rewards, show_result=False):
     plt.figure(1)
-    durations_t = torch.tensor(episode_durations, dtype=torch.float)
+    durations_t = torch.tensor(episode_rewards, dtype=torch.float)
     if show_result:
         plt.title('Result')
     else:
@@ -37,3 +42,37 @@ def plot_durations(episode_durations, show_result=False):
         plt.plot(means.numpy())
 
     plt.pause(0.001)
+
+
+# def simulate_notebook(agent: Agent, env: gym.Env, ax: plt.Axes) -> None:
+#     state = env.reset()
+#     img = ax.imshow(env.render(mode='rgb_array'))
+#     done = False
+#     while not done:
+#         action = agent.choose_action(state)
+#         img.set_data(env.render(mode='rgb_array'))
+#         plt.axis('off')
+#         display.display(plt.gcf())
+#         display.clear_output(wait=True)
+#         state, reward, done, _ = env.step(action)
+#     env.close()
+
+
+def simulate_notebook(agent: DQNAgent, env: Env, ax: plt.Axes) -> None:
+    state, _ = env.reset()
+    img = ax.imshow(env.render())
+    done = False
+    total_reward = 0
+    steps = 0
+    while not done:
+        action = agent.act(state)
+        img.set_data(env.render())
+        plt.axis('off')
+        display.display(plt.gcf())
+        display.clear_output(wait=True)
+        state, reward, terminated, truncated, _ = env.step(action)
+        total_reward += reward
+        steps += 1
+        done = terminated or truncated
+    env.close()
+    print(f'Total reward: {total_reward}\tSteps: {steps}')

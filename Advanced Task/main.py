@@ -1,13 +1,8 @@
-from utils import parse_arguments, read_settings, plot_durations
+from utils import parse_arguments, read_settings, plot_rewards, simulate
 import matplotlib.pyplot as plt
-from torch.optim import AdamW
-from collections import namedtuple, deque
 import gymnasium as gym
 import torch
-from models import *
-from replay_memory import ReplayMemory
 from tqdm import tqdm
-from itertools import count
 from agent import DQNAgent
 
 device = torch.device('cuda' if torch.cuda.is_available(
@@ -26,7 +21,7 @@ def main():
     train_settings = settings['train']
 
     # Environment
-    env = gym.make('CartPole-v1', render_mode="human")
+    env = gym.make('CartPole-v1', render_mode='rgb_array')
     state_size = env.observation_space.shape[0]
     action_size = env.action_space.n
 
@@ -36,9 +31,10 @@ def main():
     train_dqn(env, agent, **train_settings)
 
 
-def train_dqn(env, agent, batch_size, episodes):
+def train_dqn(env: gym.Env, agent: DQNAgent, episodes: int):
+    episode_rewards = []
     for episode in tqdm(range(episodes), desc="Training: "):
-        state, info = env.reset()
+        state, _ = env.reset()
         done = False
         total_reward = 0
         while not done:
@@ -48,10 +44,16 @@ def train_dqn(env, agent, batch_size, episodes):
             agent.remember(state, action, next_state, reward, done)
             state = next_state
             total_reward += reward
-            if done:
-                print("Episode: {}/{}, Total Reward: {}, Epsilon: {:.2}".format(
-                    episode+1, episodes, total_reward, agent.epsilon))
-            agent.replay(batch_size)
+            agent.replay()
+
+        print("Episode: {}/{}, Total Reward: {}, Epsilon: {:.2}".format(
+            episode+1, episodes, total_reward, agent.epsilon))
+        episode_rewards.append(total_reward)
+        if episode % 10 == 0:
+            simulate(agent, env)
+    plot_rewards(episode_rewards, show_result=True)
+    plt.ioff()
+    plt.show()
 
 
 if __name__ == '__main__':
