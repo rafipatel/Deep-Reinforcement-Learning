@@ -1,6 +1,6 @@
 # Training parameters
 train:
-  episodes: 1000
+  episodes: 2000
 agent:
   lr: 0.001
   gamma: 0.95
@@ -9,5 +9,5 @@ agent:
   epsilon_decay: 0.995
   batch_size: 64
   ##DDQN parameters
-  alpha: 1e-3
+  alpha: 1e-1
   update_frequency: 10

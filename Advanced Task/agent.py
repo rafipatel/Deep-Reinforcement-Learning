@@ -67,6 +67,11 @@ class DQNAgent:
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
 
+    def save_state(self, path):
+        torch.save(
+            {'policy_model_state_dict': self.policy_model.state_dict(),
+             'optmizer_state': self.optimizer.state_dict()}, path)
+
 
 class DoubleDQNAgent(DQNAgent):
     def __init__(self, state_size, action_size, lr=0.001, gamma=0.95, epsilon=1.0, epsilon_min=0.01, epsilon_decay=0.995, update_frequency=10, batch_size=64, alpha=1):
@@ -84,7 +89,7 @@ class DoubleDQNAgent(DQNAgent):
         transitions = self.memory.sample(self.batch_size)
         batch = self.memory.transition(*zip(*transitions))
 
-        state_batch = torch.tensor(batch.state, dtype=torch.float32)
+        state_batch = torch.tensor(np.array(batch.state, dtype=np.float32))
         action_batch = torch.tensor(batch.action, dtype=torch.long).view(-1, 1)
         reward_batch = torch.tensor(
             batch.reward, dtype=torch.float32).view(-1, 1)
@@ -109,6 +114,7 @@ class DoubleDQNAgent(DQNAgent):
 
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
+
         self.update_target_network()
 
     def update_target_network(self):
