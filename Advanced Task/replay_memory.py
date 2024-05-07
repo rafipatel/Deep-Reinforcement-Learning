@@ -16,15 +16,18 @@ class ReplayMemory:
     def sample(self, batch_size):
         return random.sample(self.memory, batch_size), None
 
+    def update_priorities(self, indices, errors):
+        pass
+
     def __len__(self):
         return len(self.memory)
 
 
 class PrioritizedReplayMemory(ReplayMemory):
-    def __init__(self, capacity, transition=None, eps=1e-6, alpha=0.6):
+    def __init__(self, capacity, transition=None, alpha=0.6):
         super().__init__(capacity, transition)
         self.priorities = deque(maxlen=capacity)
-        self.eps = eps  # Small value to avoid zero priority
+        self.eps = 1e-6  # Small value to avoid zero priority
         # Hyperparameter to control the amount of prioritization (0 - uniform, 1 - fully prioritized)
         self.alpha = alpha
 

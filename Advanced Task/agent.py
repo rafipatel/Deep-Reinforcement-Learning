@@ -2,7 +2,7 @@ import torch.nn as nn
 import torch
 import random
 import math
-from replay_memory import ReplayMemory
+from replay_memory import ReplayMemory, PrioritizedReplayMemory
 from models import DQN
 import torch.optim as optim
 import numpy as np
@@ -10,10 +10,13 @@ import numpy as np
 
 
 class DQNAgent:
-    def __init__(self, state_size, action_size, lr=0.001, gamma=0.95, epsilon=1.0, epsilon_min=0.01, epsilon_decay=0.995, batch_size=64):
+    def __init__(self, state_size: int, action_size: int, lr=0.001, gamma=0.95, epsilon=1.0, epsilon_min=0.01, epsilon_decay=0.995,
+                 batch_size=64, use_prioritized_replay=True, replay_memory_alpha=0.6):
         self.state_size = state_size
         self.action_size = action_size
-        self.memory = ReplayMemory(capacity=2000)
+        self.use_prioritized_replay = use_prioritized_replay
+        self.memory = PrioritizedReplayMemory(
+            2000, alpha=replay_memory_alpha) if use_prioritized_replay else ReplayMemory(2000)
         self.gamma = gamma
         self.epsilon = epsilon
         self.epsilon_min = epsilon_min
@@ -41,7 +44,8 @@ class DQNAgent:
     def replay(self):
         if len(self.memory) < self.batch_size:
             return
-        transitions, indices = self.memory.sample(self.batch_size)
+        transitions, indices = self.memory.sample(
+            self.batch_size)
         batch = self.memory.transition(*zip(*transitions))
 
         state_batch = torch.tensor(batch.state, dtype=torch.float32)
@@ -51,38 +55,50 @@ class DQNAgent:
         next_state_batch = torch.tensor(batch.next_state, dtype=torch.float32)
         done_mask = torch.tensor(batch.done, dtype=torch.float32).view(-1, 1)
 
+        # Compute Q values for current states
         Q = self.policy_model(state_batch).gather(1, action_batch)
 
         with torch.no_grad():
+            # Compute V(s_{t+1}) for all next states, using target network
             target_Q = reward_batch + self.gamma * \
                 torch.max(self.policy_model(next_state_batch), dim=1,
                           keepdim=True)[0] * (1 - done_mask)
 
+        # Compute the loss
         loss = self.loss_fn(Q, target_Q)
 
+        if self.use_prioritized_replay:
+            # Update priorities
+            # Compute TD errors for priority updates
+            td_errors = (target_Q - Q).squeeze().detach().abs().numpy()
+            self.memory.update_priorities(indices, td_errors)
+
+        # Backpropagation
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
 
+        # Update epsilon for the exploration-exploitation trade-off
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
 
     def save_state(self, path):
         torch.save(
             {'policy_model_state_dict': self.policy_model.state_dict(),
-             'optmizer_state': self.optimizer.state_dict()}, path)
+             'optimizer_state': self.optimizer.state_dict()}, path)
 
     def load_state(self, path):
         checkpoint = torch.load(path)
         self.policy_model.load_state_dict(
             checkpoint['policy_model_state_dict'])
-        self.optimizer.load_state_dict(checkpoint['optmizer_state'])
+        self.optimizer.load_state_dict(checkpoint['optimizer_state'])
 
 
 class DoubleDQNAgent(DQNAgent):
-    def __init__(self, state_size, action_size, lr=0.001, gamma=0.95, epsilon=1.0, epsilon_min=0.01, epsilon_decay=0.995, update_frequency=10, batch_size=64, alpha=1):
+    def __init__(self, state_size: int, action_size: int, lr=0.001, gamma=0.95, epsilon=1.0, epsilon_min=0.01, epsilon_decay=0.995,
+                 update_frequency=10, batch_size=64, alpha=1, use_prioritized_replay=True, replay_memory_alpha=0.6):
         super().__init__(state_size, action_size, lr,
-                         gamma, epsilon, epsilon_min, epsilon_decay, batch_size)
+                         gamma, epsilon, epsilon_min, epsilon_decay, batch_size, use_prioritized_replay, replay_memory_alpha)
         self.update_frequency = update_frequency
         self.alpha = float(alpha)
         self.target_model = DQN(state_size, action_size)
@@ -92,7 +108,8 @@ class DoubleDQNAgent(DQNAgent):
     def replay(self):
         if len(self.memory) < self.batch_size:
             return
-        transitions = self.memory.sample(self.batch_size)
+        transitions, indices = self.memory.sample(
+            self.batch_size)  # get both transitions and indices
         batch = self.memory.transition(*zip(*transitions))
 
         state_batch = torch.tensor(batch.state, dtype=torch.float32)
@@ -112,15 +129,23 @@ class DoubleDQNAgent(DQNAgent):
             target_Q = reward_batch + self.gamma * \
                 Q_target_next * (1 - done_mask)
 
+        # Calculate loss and backpropagate
         loss = self.loss_fn(Q_online, target_Q)
-
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
 
+        if self.use_prioritized_replay:
+            # Calculate TD errors for priority updates
+            td_errors = (target_Q - Q_online).squeeze().detach().abs().numpy()
+            # Update the priorities based on TD errors
+            self.memory.update_priorities(indices, td_errors)
+
+        # Update epsilon for exploration-exploitation trade-off
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
 
+        # Periodically update the target network weights
         if self.update_frequency is not None and self.steps_done % self.update_frequency == 0:
             self.update_target_network(self.alpha)
 
