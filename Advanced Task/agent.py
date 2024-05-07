@@ -11,7 +11,7 @@ import numpy as np
 
 class DQNAgent:
     def __init__(self, state_size: int, action_size: int, lr=0.001, gamma=0.95, epsilon=1.0, epsilon_min=0.01, epsilon_decay=0.995,
-                 batch_size=64, use_prioritized_replay=True, replay_memory_alpha=0.6):
+                 batch_size=64, use_prioritized_replay=False, replay_memory_alpha=0.6):
         self.state_size = state_size
         self.action_size = action_size
         self.use_prioritized_replay = use_prioritized_replay
@@ -96,7 +96,7 @@ class DQNAgent:
 
 class DoubleDQNAgent(DQNAgent):
     def __init__(self, state_size: int, action_size: int, lr=0.001, gamma=0.95, epsilon=1.0, epsilon_min=0.01, epsilon_decay=0.995,
-                 update_frequency=10, batch_size=64, alpha=1, use_prioritized_replay=True, replay_memory_alpha=0.6):
+                 update_frequency=10, batch_size=64, alpha=1, use_prioritized_replay=False, replay_memory_alpha=0.6):
         super().__init__(state_size, action_size, lr,
                          gamma, epsilon, epsilon_min, epsilon_decay, batch_size, use_prioritized_replay, replay_memory_alpha)
         self.update_frequency = update_frequency
