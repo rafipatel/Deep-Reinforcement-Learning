@@ -41,7 +41,7 @@ class DQNAgent:
     def replay(self):
         if len(self.memory) < self.batch_size:
             return
-        transitions = self.memory.sample(self.batch_size)
+        transitions, indices = self.memory.sample(self.batch_size)
         batch = self.memory.transition(*zip(*transitions))
 
         state_batch = torch.tensor(batch.state, dtype=torch.float32)
@@ -72,6 +72,12 @@ class DQNAgent:
             {'policy_model_state_dict': self.policy_model.state_dict(),
              'optmizer_state': self.optimizer.state_dict()}, path)
 
+    def load_state(self, path):
+        checkpoint = torch.load(path)
+        self.policy_model.load_state_dict(
+            checkpoint['policy_model_state_dict'])
+        self.optimizer.load_state_dict(checkpoint['optmizer_state'])
+
 
 class DoubleDQNAgent(DQNAgent):
     def __init__(self, state_size, action_size, lr=0.001, gamma=0.95, epsilon=1.0, epsilon_min=0.01, epsilon_decay=0.995, update_frequency=10, batch_size=64, alpha=1):
@@ -89,7 +95,7 @@ class DoubleDQNAgent(DQNAgent):
         transitions = self.memory.sample(self.batch_size)
         batch = self.memory.transition(*zip(*transitions))
 
-        state_batch = torch.tensor(np.array(batch.state, dtype=np.float32))
+        state_batch = torch.tensor(batch.state, dtype=torch.float32)
         action_batch = torch.tensor(batch.action, dtype=torch.long).view(-1, 1)
         reward_batch = torch.tensor(
             batch.reward, dtype=torch.float32).view(-1, 1)
@@ -115,10 +121,14 @@ class DoubleDQNAgent(DQNAgent):
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
 
-        self.update_target_network()
-
-    def update_target_network(self):
         if self.update_frequency is not None and self.steps_done % self.update_frequency == 0:
-            for p1, p2 in zip(self.target_model.parameters(), self.policy_model.parameters()):
-                p1.data.copy_(self.alpha * p2.data +
-                              (1 - self.alpha) * p1.data)
+            self.update_target_network(self.alpha)
+
+    def update_target_network(self, alpha):
+        for p1, p2 in zip(self.target_model.parameters(), self.policy_model.parameters()):
+            p1.data.copy_(alpha * p2.data +
+                          (1 - alpha) * p1.data)
+
+    def load_state(self, path):
+        super().load_state(path)
+        self.update_target_network(alpha=1)
