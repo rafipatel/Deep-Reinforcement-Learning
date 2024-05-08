@@ -22,7 +22,7 @@ class DQNAgent:
         self.use_prioritized_replay = use_prioritized_replay
         # Initialize the appropriate replay memory type based on the above flag.
         self.memory = PrioritizedReplayMemory(
-            2000, alpha=replay_memory_alpha) if use_prioritized_replay else ReplayMemory(2000)
+            10000, alpha=replay_memory_alpha) if use_prioritized_replay else ReplayMemory(10000)
         self.gamma = gamma  # Discount factor for future rewards.
         # Initial probability for taking a random action (exploration).
         self.epsilon = epsilon
