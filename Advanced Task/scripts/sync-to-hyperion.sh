@@ -1,0 +1,1 @@
+rsync -uahP --info=progress2 --exclude=env --exclude=data --exclude=wandb --exclude=__pycache__ --exclude=*.zip --exclude=.git --exclude=checkpoints ./* adfx751@localhost:DRL_project/

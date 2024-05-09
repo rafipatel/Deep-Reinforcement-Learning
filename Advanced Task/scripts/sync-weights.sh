@@ -1,0 +1,1 @@
+rsync -uahP --info=progress2 adfx751@localhost:DRL_project/checkpoints/* ./checkpoints
