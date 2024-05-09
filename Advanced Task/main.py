@@ -22,7 +22,7 @@ def main():
     train_settings = settings['train']
 
     # Environment
-    env = gym.make('MountainCar-v0', render_mode='rgb_array')
+    env = gym.make('MountainCar-v1', render_mode='rgb_array')
     state_size = env.observation_space.shape[0]
     action_size = env.action_space.n
 
