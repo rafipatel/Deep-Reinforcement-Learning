@@ -208,7 +208,11 @@ class DoubleDQNAgent(DQNAgent):
         if self.update_frequency is not None and self.steps_done % self.update_frequency == 0:
             self.update_target_network(self.alpha)
 
- 
+    # Method to update the target network by interpolating between its weights and the policy model's weights.
+    def update_target_network(self, alpha):
+        for p1, p2 in zip(self.target_model.parameters(), self.policy_model.parameters()):
+            # Update target model parameters.
+            p1.data.copy_(alpha * p2.data + (1 - alpha) * p1.data)
 
     def save_state(self, path):
         state_dict = {
