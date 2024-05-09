@@ -1,5 +1,4 @@
 # from IPython import display
-from IPython import display
 import matplotlib.pyplot as plt
 import torch
 import yaml
@@ -56,23 +55,3 @@ def plot_rewards(episode_rewards, show_result=False):
 #         display.clear_output(wait=True)
 #         state, reward, done, _ = env.step(action)
 #     env.close()
-
-
-def simulate_notebook(agent: DQNAgent, env: Env, ax: plt.Axes) -> None:
-    state, _ = env.reset()
-    img = ax.imshow(env.render())
-    done = False
-    total_reward = 0
-    steps = 0
-    while not done:
-        action = agent.act(state)
-        img.set_data(env.render())
-        plt.axis('off')
-        display.display(plt.gcf())
-        display.clear_output(wait=True)
-        state, reward, terminated, truncated, _ = env.step(action)
-        total_reward += reward
-        steps += 1
-        done = terminated or truncated
-    env.close()
-    print(f'Total reward: {total_reward}\tSteps: {steps}')
