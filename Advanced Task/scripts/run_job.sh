@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --job-name DRL                              # Job name
-#SBATCH --partition=prigpu                          # Select the correct partition.
+#SBATCH --partition=preemptgpu                          # Select the correct partition.
 #SBATCH --nodes=1                                   # Run on 1 nodes (each node has 48 cores)
 #SBATCH --ntasks-per-node=1                         # Run one task
-#SBATCH --cpus-per-task=4                           # Use 4 cores, most of the procesing happens on the GPU
+#SBATCH --cpus-per-task=12                           
 #SBATCH --mem=90GB                                  # Expected ammount CPU RAM needed (Not GPU Memory)
 #SBATCH --time=48:00:00                             # Expected ammount of time to run Time limit hrs:min:sec
 #SBATCH --gres=gpu:1                                # Use one gpu.
@@ -31,4 +31,4 @@ wandb login $WANDB_API_KEY --relogin
 #pip freeze
 #Run your script.
 export https_proxy=http://hpc-proxy00.city.ac.uk:3128
-python3 main.py
+python3 test.py

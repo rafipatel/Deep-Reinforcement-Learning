@@ -21,6 +21,7 @@ class DQNAgent:
         self.hidden_units = hidden_units  # Number of hidden units in the DQN.
         # Whether to use prioritized replay memory.
         self.use_prioritized_replay = use_prioritized_replay
+        self.replay_memory_alpha = replay_memory_alpha
         # Initialize the appropriate replay memory type based on the above flag.
         self.memory = PrioritizedReplayMemory(
             10000, alpha=replay_memory_alpha) if use_prioritized_replay else ReplayMemory(10000)
@@ -41,6 +42,7 @@ class DQNAgent:
         self.loss_fn = nn.MSELoss()
         # Counter for steps completed (for logging or modifying behavior over time).
         self.steps_done = 0
+        self.lr = lr
 
     # Function to select an action based on current state.
     def act(self, state):
@@ -112,8 +114,21 @@ class DQNAgent:
 
     # Method to save the current state of the model to a file.
     def save_state(self, path):
-        torch.save({'policy_model_state_dict': self.policy_model.state_dict(
-        ), 'optimizer_state': self.optimizer.state_dict()}, path)
+        state_dict = {
+            'policy_model_state_dict': self.policy_model.state_dict(),
+            'optimizer_state': self.optimizer.state_dict(),
+            'hidden_units': self.hidden_units,
+            'lr': self.lr,
+            'gamma': self.gamma,
+            'epsilon': self.epsilon,
+            'epsilon_min': self.epsilon_min,
+            'epsilon_decay': self.epsilon_decay,
+            'batch_size': self.batch_size,
+            'use_prioritized_replay': self.use_prioritized_replay,
+            'replay_memory_alpha': self.replay_memory_alpha
+        }
+
+        torch.save(state_dict, path)
 
     # Method to load the state of the model from a file.
     def load_state(self, path):
@@ -198,6 +213,26 @@ class DoubleDQNAgent(DQNAgent):
         for p1, p2 in zip(self.target_model.parameters(), self.policy_model.parameters()):
             # Update target model parameters.
             p1.data.copy_(alpha * p2.data + (1 - alpha) * p1.data)
+
+    def save_state(self, path):
+        state_dict = {
+            'policy_model_state_dict': self.policy_model.state_dict(),
+            'optimizer_state': self.optimizer.state_dict(),
+            'hidden_units': self.hidden_units,
+            'lr': self.lr,
+            'gamma': self.gamma,
+            'epsilon': self.epsilon,
+            'epsilon_min': self.epsilon_min,
+            'epsilon_decay': self.epsilon_decay,
+            'batch_size': self.batch_size,
+            'use_prioritized_replay': self.use_prioritized_replay,
+            'replay_memory_alpha': self.replay_memory_alpha,
+            'target_model_state_dict': self.target_model.state_dict(),
+            'update_frequency': self.update_frequency,
+            'alpha': self.alpha
+        }
+
+        torch.save(state_dict, path)
 
     # Overridden method to load state and then update target network weights to ensure consistency.
     def load_state(self, path):
