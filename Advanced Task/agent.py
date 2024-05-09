@@ -12,12 +12,13 @@ import numpy as np
 
 class DQNAgent:
     # Constructor to initialize the DQN agent with various parameters for configuration.
-    def __init__(self, state_size: int, action_size: int, lr=0.001, gamma=0.95, epsilon=1.0, epsilon_min=0.01, epsilon_decay=0.995,
+    def __init__(self, state_size: int, action_size: int, hidden_units=128, lr=0.001, gamma=0.95, epsilon=1.0, epsilon_min=0.01, epsilon_decay=0.995,
                  batch_size=64, use_prioritized_replay=False, replay_memory_alpha=0.6):
         # Store input parameters and set up the environment and model.
         self.state_size = state_size  # The size of an input state to the DQN.
         # The number of possible actions the agent can take.
         self.action_size = action_size
+        self.hidden_units = hidden_units  # Number of hidden units in the DQN.
         # Whether to use prioritized replay memory.
         self.use_prioritized_replay = use_prioritized_replay
         # Initialize the appropriate replay memory type based on the above flag.
@@ -32,7 +33,8 @@ class DQNAgent:
         # Number of experiences to sample from memory during training.
         self.batch_size = batch_size
         # Initialize the policy model (DQN) with specified state and action sizes.
-        self.policy_model = DQN(state_size, action_size)
+        self.policy_model = DQN(state_size, action_size,
+                                hidden_units)
         # Set up the optimizer with AdamW algorithm (variation of Adam better suited for weight decay).
         self.optimizer = optim.AdamW(self.policy_model.parameters(), lr=lr)
         # Mean Squared Error Loss to measure prediction accuracy.
@@ -50,7 +52,8 @@ class DQNAgent:
         else:
             with torch.no_grad():  # Temporarily set all the requires_grad flag to false.
                 # Convert state to tensor.
-                state = torch.tensor(state, dtype=torch.float32)
+                state = torch.tensor(
+                    state, dtype=torch.float32)
                 # Get Q-values for all actions from the policy model.
                 q_values = self.policy_model(state)
                 # Choose the action with the highest Q-value (exploit).
@@ -71,11 +74,13 @@ class DQNAgent:
         batch = self.memory.transition(*zip(*transitions))
 
         # Convert batches of experiences to tensors.
-        state_batch = torch.tensor(batch.state, dtype=torch.float32)
+        state_batch = torch.tensor(
+            batch.state, dtype=torch.float32)
         action_batch = torch.tensor(batch.action, dtype=torch.long).view(-1, 1)
         reward_batch = torch.tensor(
             batch.reward, dtype=torch.float32).view(-1, 1)
-        next_state_batch = torch.tensor(batch.next_state, dtype=torch.float32)
+        next_state_batch = torch.tensor(
+            batch.next_state, dtype=torch.float32)
         done_mask = torch.tensor(batch.done, dtype=torch.float32).view(-1, 1)
 
         # Compute the Q values for current states (Q-learning).
@@ -88,10 +93,8 @@ class DQNAgent:
 
         # Calculate the loss between current Q values and target Q values.
         loss = self.loss_fn(Q, target_Q)
-        if self.use_prioritized_replay:  # Check if using prioritized replay.
-            # Update priorities based on TD errors, to prioritize important experiences.
-            td_errors = (target_Q - Q).squeeze().detach().abs().numpy()
-            self.memory.update_priorities(indices, td_errors)
+
+        self.update_buffer_priorities(indices, target_Q, Q)
 
         # Perform a backpropagation pass to update weights.
         self.optimizer.zero_grad()
@@ -99,8 +102,13 @@ class DQNAgent:
         self.optimizer.step()
 
         # Update exploration rate (epsilon), ensuring it does not fall below the minimum.
-        if self.epsilon > self.epsilon_min:
-            self.epsilon *= self.epsilon_decay
+        self.decay_epsilon()
+
+    def update_buffer_priorities(self, indices, target_Q, Q):
+        if self.use_prioritized_replay:  # Check if using prioritized replay.
+            # Update priorities based on TD errors, to prioritize important experiences.
+            td_errors = (target_Q - Q).squeeze().detach().abs().numpy()
+            self.memory.update_priorities(indices, td_errors)
 
     # Method to save the current state of the model to a file.
     def save_state(self, path):
@@ -116,21 +124,27 @@ class DQNAgent:
         # Restore optimizer parameters.
         self.optimizer.load_state_dict(checkpoint['optimizer_state'])
 
+    def decay_epsilon(self):
+        # Update exploration probability.
+        if self.epsilon > self.epsilon_min:
+            self.epsilon *= self.epsilon_decay
+
 # DoubleDQNAgent class, extending DQNAgent, to use Double DQN strategy (helps reduce overestimations).
 
 
 class DoubleDQNAgent(DQNAgent):
     # Constructor with additional parameters specific to Double DQN.
-    def __init__(self, state_size: int, action_size: int, lr=0.001, gamma=0.95, epsilon=1.0, epsilon_min=0.01, epsilon_decay=0.995,
+    def __init__(self, state_size: int, action_size: int, hidden_units=128, lr=0.001, gamma=0.95, epsilon=1.0, epsilon_min=0.01, epsilon_decay=0.995,
                  update_frequency=10, batch_size=64, alpha=1, use_prioritized_replay=False, replay_memory_alpha=0.6):
-        super().__init__(state_size, action_size, lr, gamma, epsilon, epsilon_min,
+        super().__init__(state_size, action_size, hidden_units, lr, gamma, epsilon, epsilon_min,
                          epsilon_decay, batch_size, use_prioritized_replay, replay_memory_alpha)
         # Frequency at which to update the target model.
         self.update_frequency = update_frequency
         # Factor for interpolating between the target and policy models.
         self.alpha = float(alpha)
         # Secondary (target) model for Double DQN.
-        self.target_model = DQN(state_size, action_size)
+        self.target_model = DQN(state_size, action_size,
+                                hidden_units)
         # Initialize target model weights to policy model's weights.
         self.target_model.load_state_dict(self.policy_model.state_dict())
         self.target_model.eval()  # Set the target model to evaluation mode.
@@ -145,11 +159,13 @@ class DoubleDQNAgent(DQNAgent):
         batch = self.memory.transition(*zip(*transitions))
 
         # Convert experience batches to tensors.
-        state_batch = torch.tensor(batch.state, dtype=torch.float32)
+        state_batch = torch.tensor(
+            batch.state, dtype=torch.float32)
         action_batch = torch.tensor(batch.action, dtype=torch.long).view(-1, 1)
         reward_batch = torch.tensor(
             batch.reward, dtype=torch.float32).view(-1, 1)
-        next_state_batch = torch.tensor(batch.next_state, dtype=torch.float32)
+        next_state_batch = torch.tensor(
+            batch.next_state, dtype=torch.float32)
         done_mask = torch.tensor(batch.done, dtype=torch.float32).view(-1, 1)
 
         # Compute Q values using the policy model.
@@ -169,13 +185,9 @@ class DoubleDQNAgent(DQNAgent):
         loss.backward()
         self.optimizer.step()
 
-        if self.use_prioritized_replay:  # Update priorities if using prioritized replay.
-            td_errors = (target_Q - Q_online).squeeze().detach().abs().numpy()
-            self.memory.update_priorities(indices, td_errors)
+        self.update_buffer_priorities(indices, target_Q, Q_online)
 
-        # Update exploration probability.
-        if self.epsilon > self.epsilon_min:
-            self.epsilon *= self.epsilon_decay
+        self.decay_epsilon()  # Decay exploration rate.
 
         # Periodically update the weights of the target network to slowly track the policy network.
         if self.update_frequency is not None and self.steps_done % self.update_frequency == 0:
