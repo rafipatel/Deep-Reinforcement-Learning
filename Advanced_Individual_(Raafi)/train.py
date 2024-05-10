@@ -29,6 +29,8 @@ config["lr"] = 0.0005
 
 if __name__ == '__main__':
 
+    print("run started")
+
     ray.tune.run("DQN", name="Breakout_Model", stop={"timesteps_total": 4000}, checkpoint_freq=20, config=config,
                          local_dir = "~/ray_results/" + env_name,
                         )
