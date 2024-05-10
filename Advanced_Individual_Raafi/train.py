@@ -8,7 +8,7 @@ env_name = "Breakout-v4"
 config = dqn.DQNConfig()
 
 config["gamma"] = 0.99
-config["gamma"] = tune.grid_search([0.9, 0.99])
+# config["gamma"] = tune.grid_search([0.9, 0.99])
 config["train_batch_size"] = 64
 config["timesteps_per_iteration"] = 2000
 config["target_network_update_freq"] = 600
