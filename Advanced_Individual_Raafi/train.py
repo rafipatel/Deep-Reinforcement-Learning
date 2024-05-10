@@ -31,7 +31,7 @@ if __name__ == '__main__':
 
     print("run started")
 
-    ray.tune.run("DQN", name="Breakout_Model", stop={"timesteps_total": 4000}, checkpoint_freq=20, config=config,
+    ray.tune.run("DQN", name="Breakout_Model", stop={"timesteps_total": 1000000}, checkpoint_freq=20, config=config,
                          local_dir = "/users/adfx757/ray_results/" + env_name,
                         )
 
