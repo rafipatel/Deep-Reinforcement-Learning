@@ -20,6 +20,7 @@ config["double_q"] = False  # Enabling Double Q-Learning can help mitigate the o
 config["n_step"] = 5  # A larger n-step return might make the learning process more stable and efficient.
 config["exploration_fraction"] = 0.2  # A higher exploration fraction can encourage the agent to explore more at the beginning of training.
 config["exploration_final_eps"] = 0.01  # A lower final epsilon value can make the policy less random as training progresses.
+# config["lr"] = tune.grid_search([0.001, 0.005])
 config["lr"] = 0.001  # A higher learning rate can make the agent learn faster, but it might also destabilize the learning process.
 config["num_gpus"] = 1
 config["env"] = "BreakoutDeterministic-v4"
