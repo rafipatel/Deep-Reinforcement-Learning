@@ -1,3 +1,8 @@
+#Individual Task (Raafi) - 9
+#https://docs.ray.io/en/latest/rllib/rllib-algorithms.html -- to get the information of all parameters used here
+# This notebook various parts are influenced by INM707 Lecture and Labs
+
+
 import ray.rllib.algorithms.dqn as dqn
 import ray
 
