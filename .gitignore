@@ -345,3 +345,4 @@ pyrightconfig.json
 Advanced Task/rllib.ipynb
 Advanced Task/wandb
 IndividualTask-Youssef/checkpoints/
+*.zip
