@@ -1,4 +1,4 @@
-Reinforcement Learning Algorithms: From Q-Learning to Advanced DQN
+# Reinforcement Learning Algorithms: From Q-Learning to Advanced DQN
 
 Welcome to this repository showcasing the implementation and analysis of various reinforcement learning (RL) algorithms. This project demonstrates the application of RL techniques to both simple and complex scenarios, highlighting the versatility and power of these methods in solving diverse problems.
 
