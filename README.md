@@ -2,7 +2,7 @@
 A repository for  University Studies for the module of Reinforcement Learning
 
 
-Repository will include
+Repository includes
 
 1) Basic Task
 
